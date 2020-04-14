@@ -3,5 +3,10 @@
 
 
 La aplicacion esta desarrollada en php, sobre la distribucion de Xampp 7.4. 
-Se debe ejecutar el servidor Apache http server, y el servidor de base de datos MySQL.
+Despligue de la aplicacion:
+- Ejecutar el servidor Apache http server
+- Ejecutar el servidor de base de datos MySQL.
+- Copiar los archivos index.php y carpteta dashboard en la carpeta htdocs en la carptea de instalacion de xampp.
+- Abrir el navegador e ingresar a la direccion http://localhost:80 para ejecutar la aplicacion web, desde alli se tiene acceso a las resoluciones de los puntos del practico.
+
 
