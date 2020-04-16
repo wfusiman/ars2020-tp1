@@ -1,5 +1,6 @@
 <?php
 
+// Cifra / Descifra un mensaje con el metodo Caesar.
 function caesar( $mensaje, $clave, $alfabeto, $cifrar ) {
     $array_msj = str_split( $mensaje ); // separa el mensaje en caracteres
     $array_alfabeto = str_split( $alfabeto ); // separa el alfabeto en caracteres
@@ -23,7 +24,7 @@ function caesar( $mensaje, $clave, $alfabeto, $cifrar ) {
   return implode( $array_result ); // retorna la cadena resultado.
 }
 
-
+// Cifra / Descifra un mensaje con el metodo Vigenere.
 function vigenere( $mensaje, $clave, $alfabeto, $cifrar ) {
     $array_msj = str_split( $mensaje );
     $array_alfabeto = str_split( $alfabeto );
@@ -50,10 +51,22 @@ function vigenere( $mensaje, $clave, $alfabeto, $cifrar ) {
     return implode( $array_result );
 }
 
+// Calcula el modulo de dividir dividendo por divisor
 function modulo($dividend, $divisor) {
   $result = $dividend % $divisor;
   return $result < 0 ? $result + $divisor : $result;
 }
 
+
+// Retorna una cadena alfanumerica aletaria de 10 caracteres que se utiliza como salt.
+function salt_random() {
+  $valores = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  $longitud = 10;
+  $cadena = "";
+  for ($i=0; $i < $longitud; $i++){
+    $cadena .= $valores[mt_rand(0, strlen( $valores )-1 )];
+  }
+  return $cadena;
+}
 
 ?>

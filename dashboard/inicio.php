@@ -15,6 +15,7 @@ include './header.html';
             <li>Usuarios: lista los usuarios registrados en la base de datos. Ofrece la opcion de registrar y autentificar un usuario.</li>
             <li>PhpMyAdmin: acceso al administrado de la base de datos Mysql.
         </ul>
+
     </div>
 </form>
 </div>

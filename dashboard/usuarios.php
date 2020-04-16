@@ -1,5 +1,6 @@
 <?php
 
+include_once('funcs.php');
 include 'header.html';
 ?>
 
@@ -10,8 +11,6 @@ include 'header.html';
         $usuariodb = "usuario_ars";
         $contrasena = "12345678";
         
-        
-        $conn = mysqli_connect( $servidor, $usuariodb, $contrasena, $basedatos );
         if($_GET) { 
             if (isset($_GET["usuarios"])) { // Listar usuarios
                 echo '<form>';
@@ -19,7 +18,7 @@ include 'header.html';
                             <h1>Usuarios</h1>
                         </div>';
                 echo '<br>';
-
+                $conn = mysqli_connect( $servidor, $usuariodb, $contrasena, $basedatos );
                 if (!$conn) 
                     error_log( print_r( "Fallo coneccion: " . mysqli_connect_error() ));
                 
@@ -27,7 +26,7 @@ include 'header.html';
                         <button id="btnNuevo" type="button" onclick="location.href=\'./usuarios.php?nuevo\'">Registrar</button>
                         <button id="btnAuth" type="button" onclick="location.href=\'./usuarios.php?aut\'">Autenticar</button>
                       </div>';
-                $list_usuarios = mysqli_query( $conn,  "SELECT * FROM USUARIOS" );
+                $list_usuarios = $conn->query( "SELECT * FROM USUARIOS" );
                 if ($list_usuarios === FALSE) {
                     error_log( print_r( "Error realizando la consulta: " . $conn->error ));
                 } 
@@ -51,9 +50,8 @@ include 'header.html';
                 }
 
                 echo '</table>';
-                mysqli_close( $conn );
-
                 echo '</form>';
+                mysqli_close( $conn );
             }
             elseif (isset($_GET["nuevo"])){  // Registrar nuevo usuario
                 echo ' <form action="./usuarios.php" method="POST">';
@@ -92,6 +90,7 @@ include 'header.html';
                       </div>';
                 echo '<div>
                         <button id="btnGuardar" name="reg">Guardar</button>
+                        <button id="btnSalir" type="button" onclick="location.href=\'./usuarios.php?usuarios\'">Salir</button>
                      </div>';
             
                 echo '</form>';
@@ -115,6 +114,7 @@ include 'header.html';
                       </div>';
                 echo '<div>
                         <button id="btnAut" name="aut">Autenticar</button>
+                        <button id="btnSalir" type="button" onclick="location.href=\'./usuarios.php?usuarios\'">Salir</button>
                       </div>';          
                 echo '</form>';
             }
@@ -132,7 +132,7 @@ include 'header.html';
                         <h1>Registro nuevo usuario</h1>
                     </div>';
 
-                //$conn = mysqli_connect( $servidor, $usuariodb, $contrasena, $basedatos );
+                $conn = mysqli_connect( $servidor, $usuariodb, $contrasena, $basedatos );
                 if (!$conn) 
                     error_log( print_r( "Fallo coneccion: " . mysqli_connect_error() ));
 
@@ -142,7 +142,7 @@ include 'header.html';
                     echo '<div class="item" style="font-size: 18px"> <span>Debe ingresar usuario</span></div>';
                 }
                 else {
-                    $result = mysqli_query( $conn, "SELECT usuario FROM USUARIOS WHERE usuario = '". $usuario . "'" );
+                    $result = $conn->query( "SELECT usuario FROM USUARIOS WHERE usuario = '". $usuario . "'" );
                     if ($result->num_rows > 0) {
                         $error = TRUE;
                         echo '<div class="item" style="font-size: 18px"> <span>El nombre de usuario ya esta siendo utilizado, ingrese otro distinto</span></div>';
@@ -158,10 +158,12 @@ include 'header.html';
                 }
                 
                 if (!$error) {
-                    // guardar usuario
-                    $hash_pwd = password_hash( $pwd, PASSWORD_DEFAULT );
-                    $sql = "INSERT INTO usuarios (usuario,pwd,nombre,apellido) VALUES ('" 
-                            .$usuario. "','" .$hash_pwd . "','" .$nombre. "','" .$apellido. "')";
+                    // guardar usuario 
+                    $salt = salt_random(); // Obtener la salt aleatoria.
+                    $hash_pwd = password_hash( $pwd.$salt, PASSWORD_DEFAULT ); // hash password + salt.
+                    
+                    // insertar registro de nuevo usuario, pwd = hash_pwd + salt.
+                    $sql = "INSERT INTO usuarios (usuario,pwd,nombre,apellido) VALUES ('" .$usuario. "','" .$hash_pwd.$salt. "','" .$nombre. "','" .$apellido. "')";
                     if ($conn->query( $sql ) === TRUE) {    
                         echo '<div class="item" style="font-size: 18px"> 
                                 <span>Usuario registrado exitosamente</span>
@@ -172,39 +174,68 @@ include 'header.html';
                     }
                 }
                 echo '<div>
-                        <button id="btnSalir" type="button" onclick="location.href=\'./usuarios.php?usuarios\'">Salir</button>
                         <button id="btnVolver" type="button" onclick="location.href=\'./usuarios.php?nuevo\'">Volver</button>
+                        <button id="btnSalir" type="button" onclick="location.href=\'./usuarios.php?usuarios\'">Salir</button>
                     </div>'; 
                 echo '</form>';
+                mysqli_close( $conn );
             }
             elseif(isset($_POST["aut"])) {
-                $usuario = $_PUT["usuario"];
-                $pwd = $_PUT["pws"];
+                $usuario_in = $_POST["usuario"];
+                $passwd_in = $_POST["pwd"];
 
                 echo ' <form>';
                 echo '<div class="banner">
                         <h1>Autenticar usuario</h1>
                     </div>';
 
-                //$conn = mysqli_connect( $servidor, $usuariodb, $contrasena, $basedatos );
+                $conn = mysqli_connect( $servidor, $usuariodb, $contrasena, $basedatos );
                 if (!$conn) 
                     error_log( print_r( "Fallo coneccion: " . mysqli_connect_error() ));
 
                 $error = FALSE;
-                if (!$usuario || $usuario == "") {
+                if (!$usuario_in || $usuario_in == "") {
                     $error = TRUE;
-                    echo '<div class="item" style="font-size: 18px"> <span>Debe ingresar usuario</span></div>';
+                    echo '<div class="item" style="font-size: 18px"> <span>Error: Debe ingresar usuario</span></div>';
                 }
-                elseif (!$pwd || $pwd == "") {
+                if (!$passwd_in || $passwd_in == "") {
                     $error = TRUE;
-                    echo '<div class="item" style="font-size: 18px"> <span>Debe ingresar una contraseña</span></div>';
+                    echo '<div class="item" style="font-size: 18px"> <span>Error: Debe ingresar una contraseña</span></div>';
                 }
+                if(!$error) { 
+                    // obtener el registro del usuario 
+                    $usr = $conn->query( "SELECT usuario,pwd,nombre,apellido FROM usuarios WHERE usuario = '" . $usuario_in . "'");
+                    //error_log( print_r( 'usuario recuperado: ' . $usr ));
+                    if ($usr === FALSE) {
+                        echo '<div class="item" style="font-size: 18px"> <span>Error: ' . $conn->error . ' </span></div>';
+                    }
+                    elseif ($usr->num_rows == 0) {
+                        echo '<div class="item" style="font-size: 18px"> <span>Error: No se encontro usuario ' . $usuario_in . ' </span></div>';
+                    }
+                    else {
+                        // obtener el valor de la columna pwd.
+                        $row = mysqli_fetch_row( $usr );
+                        
+                        // separo la salt del hash desde el campo pwd del registro
+                        $pwd_db = substr( $row[1], 0,60 ); 
+                        $salt = substr( $row[1], -10 );
 
+                        if (password_verify( $passwd_in.$salt, $pwd_db)) { // autenticado exitosamente
+                            echo '<div class="item" style="font-size: 18px"> <span>Usuario: ' . $row[0]. ' autenticado con exito</span></div>';
+                            echo '<div class="item" style="font-size: 18px"> <span>Nombre: ' . $row[2]. ' </span></div>';
+                            echo '<div class="item" style="font-size: 18px"> <span>Apellido: ' . $row[3]. ' </span></div>';
+                        }
+                        else {  // no autenticado
+                            echo '<div class="item" style="font-size: 18px"> <span>Fallo autenticacion</span></div>';
+                        }
+                    }
+                }
                 echo '<div>
-                        <button id="btnSalir" type="button" onclick="location.href=\'./usuarios.php?usuarios\'">Salir</button>
                         <button id="btnVolver" type="button" onclick="location.href=\'./usuarios.php?aut\'">Volver</button>
+                        <button id="btnSalir" type="button" onclick="location.href=\'./usuarios.php?usuarios\'">Salir</button>
                     </div>'; 
                 echo '</form>';
+                mysqli_close( $conn );
             }
         }
 
@@ -219,22 +250,3 @@ include 'header.html';
 include 'footer.html';
 
 ?>
-
-<script type="text/javascript">
-
-        const className = {
-            USUARIO_TEXT: 'usuario-text',
-            USUARIO_OK: 'usuario-ok'
-        }
-
-        function mensajeAuth( usuario, auth, error ) {
-            if (auth) {
-                mensaje = 'Usuario ' + usuario + ' autenticado con exito';
-            }
-            else {
-                mensaje = 'La autenticacion fallo, ' + error;
-            }
-            alert( mensaje );
-        }
-
-</script>
